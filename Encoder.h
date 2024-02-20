@@ -65,10 +65,10 @@
 // The assembly code uses auto-incrementing addressing modes, so the struct
 // must remain in exactly this order.
 typedef struct {
-	volatile IO_REG_TYPE * pin1_register;
-	volatile IO_REG_TYPE * pin2_register;
-	IO_REG_TYPE            pin1_bitmask;
-	IO_REG_TYPE            pin2_bitmask;
+	volatile IO_REG_TYPE * pin12_register;
+	volatile IO_REG_TYPE * pin13_register;
+	IO_REG_TYPE            pin12_bitmask;
+	IO_REG_TYPE            pin13_bitmask;
 	uint8_t                state;
 	int32_t                position;
 } Encoder_internal_state_t;
@@ -76,32 +76,32 @@ typedef struct {
 class Encoder
 {
 public:
-	Encoder(uint8_t pin1, uint8_t pin2) {
+	Encoder(uint8_t pin12, uint8_t pin13) {
 		#ifdef INPUT_PULLUP
 		pinMode(pin1, INPUT_PULLUP);
 		pinMode(pin2, INPUT_PULLUP);
 		#else
-		pinMode(pin1, INPUT);
-		digitalWrite(pin1, HIGH);
-		pinMode(pin2, INPUT);
-		digitalWrite(pin2, HIGH);
+		pinMode(pin12, INPUT);
+		digitalWrite(pin12, HIGH);
+		pinMode(pin13, INPUT);
+		digitalWrite(pin13, HIGH);
 		#endif
-		encoder.pin1_register = PIN_TO_BASEREG(pin1);
-		encoder.pin1_bitmask = PIN_TO_BITMASK(pin1);
-		encoder.pin2_register = PIN_TO_BASEREG(pin2);
-		encoder.pin2_bitmask = PIN_TO_BITMASK(pin2);
+		encoder.pin12_register = PIN_TO_BASEREG(pin12);
+		encoder.pin12_bitmask = PIN_TO_BITMASK(pin12);
+		encoder.pin13_register = PIN_TO_BASEREG(pin13);
+		encoder.pin13_bitmask = PIN_TO_BITMASK(pin13);
 		encoder.position = 0;
 		// allow time for a passive R-C filter to charge
 		// through the pullup resistors, before reading
 		// the initial state
 		delayMicroseconds(2000);
 		uint8_t s = 0;
-		if (DIRECT_PIN_READ(encoder.pin1_register, encoder.pin1_bitmask)) s |= 1;
-		if (DIRECT_PIN_READ(encoder.pin2_register, encoder.pin2_bitmask)) s |= 2;
+		if (DIRECT_PIN_READ(encoder.pin12_register, encoder.pin12_bitmask)) s |= 1;
+		if (DIRECT_PIN_READ(encoder.pin13_register, encoder.pin13_bitmask)) s |= 2;
 		encoder.state = s;
 #ifdef ENCODER_USE_INTERRUPTS
-		interrupts_in_use = attach_interrupt(pin1, &encoder);
-		interrupts_in_use += attach_interrupt(pin2, &encoder);
+		interrupts_in_use = attach_interrupt(pin12, &encoder);
+		interrupts_in_use += attach_interrupt(pin13, &encoder);
 #endif
 		//update_finishup();  // to force linker to include the code (does not work)
 	}
@@ -300,8 +300,8 @@ public:
 		"L%=end:"				"\n"
 		: : "x" (arg) : "r22", "r23", "r24", "r25", "r30", "r31");
 #else
-		uint8_t p1val = DIRECT_PIN_READ(arg->pin1_register, arg->pin1_bitmask);
-		uint8_t p2val = DIRECT_PIN_READ(arg->pin2_register, arg->pin2_bitmask);
+		uint8_t p1val = DIRECT_PIN_READ(arg->pin12_register, arg->pin12_bitmask);
+		uint8_t p2val = DIRECT_PIN_READ(arg->pin13_register, arg->pin13_bitmask);
 		uint8_t state = arg->state & 3;
 		if (p1val) state |= 4;
 		if (p2val) state |= 8;
